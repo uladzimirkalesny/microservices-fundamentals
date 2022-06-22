@@ -1,0 +1,18 @@
+version: '3.0'
+services:
+  song-service-database:
+    container_name: song-service-database
+    image: gvenzl/oracle-xe:latest
+    ports:
+      - "1522:1521"
+    environment:
+      ORACLE_PASSWORD: "oracle"
+      ORACLE_DATABASE: "song_service"
+    networks:
+      backend:
+        aliases:
+          - "song-service-database"
+
+networks:
+  backend:
+    driver: bridge
