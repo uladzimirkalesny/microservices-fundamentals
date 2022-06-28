@@ -54,7 +54,7 @@ public class ResourceController {
                 .map(ranges -> resourceFacade.findRangedResourceById(id, Long.parseLong(ranges[0]), Long.parseLong(ranges[1])))
                 .orElseGet(() -> resourceFacade.findResourceById(id));
 
-        log.info("Successfully obtained the binary resource = {}", resource.length);
+        log.info("Successfully obtained the binary resource with resource-id = {}", id);
 
         return Optional.ofNullable(rangeHeader)
                 .map(header -> ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)

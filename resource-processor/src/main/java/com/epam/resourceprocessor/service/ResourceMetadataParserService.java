@@ -1,49 +1,57 @@
 package com.epam.resourceprocessor.service;
 
-import com.epam.resourceprocessor.domain.ResourceMetadata;
-import com.epam.resourceprocessor.exception.ResourceProcessorException;
+import com.epam.resourceprocessor.client.resource.ResourceServiceFeignDecoratorClient;
+import com.epam.resourceprocessor.client.song.SongServiceFeignDecoratorClient;
+import com.epam.resourceprocessor.dto.ResourceMessage;
+import com.epam.resourceprocessor.exception.FeignCommunicationApiException;
+import com.epam.resourceprocessor.mapper.MetadataMapper;
+import com.epam.resourceprocessor.mapper.ResourceMetadataMapper;
+import com.epam.resourceprocessor.parser.ResourceMetadataParser;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.ParseContext;
-import org.apache.tika.parser.mp3.Mp3Parser;
-import org.apache.tika.sax.BodyContentHandler;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
-
+@RequiredArgsConstructor
 @Slf4j
 
 @Service
 public class ResourceMetadataParserService {
-    private static final String NAME = "dc:title";
-    private static final String ARTIST = "xmpDM:artist";
-    private static final String ALBUM = "xmpDM:album";
-    private static final String LENGTH = "xmpDM:duration";
-    private static final String YEAR = "xmpDM:releaseDate";
 
-    public ResourceMetadata extractResourceMetadata(byte[] resource) {
+    private final SongServiceFeignDecoratorClient songServiceFeignDecoratorClient;
+    private final ResourceServiceFeignDecoratorClient resourceServiceFeignDecoratorClient;
+    private final ResourceMetadataParser resourceMetadataParser;
+    private final MetadataMapper metadataMapper;
+    private final ResourceMetadataMapper resourceMetadataMapper;
+
+    @Value("${resource.service.target.uri}")
+    private String resourceServiceUri;
+
+    @Value("${song.service.target.uri}")
+    private String songServiceUri;
+
+    @RabbitListener(queues = "${rabbitmq.queue.name}")
+    public void processResourceMetadataByResourceId(ResourceMessage resourceMessage) {
         try {
-            var handler = new BodyContentHandler();
-            var metadata = new Metadata();
-            var inputStream = new ByteArrayInputStream(resource);
-            var ctx = new ParseContext();
+            log.info("RabbitMQ Listener read message from queue : {}", resourceMessage);
+            var resource = resourceServiceFeignDecoratorClient.forTarget(resourceServiceUri)
+                    .getResourceByResourceId(resourceMessage.getResourceId());
+            log.info("Successfully received the binary resource from resource-service with id = {}", resourceMessage.getResourceId());
 
-            var mp3Parser = new Mp3Parser();
-            mp3Parser.parse(inputStream, handler, metadata, ctx);
-            return mapMp3MetadataToResourceMetadata(metadata);
+            log.info("Prepare to process metadata obtaining for resource with id = {}", resourceMessage.getResourceId());
+            var metadata = resourceMetadataParser.extractTikaMetadataFromResource(resource);
+            var resourceMetadata = metadataMapper.tikaMetadataToResourceMetadata(metadata);
+            log.info("Resource Metadata successfully obtained : {} for binary resource with id = {}", resourceMetadata, resourceMessage.getResourceId());
+
+            var createdSong = songServiceFeignDecoratorClient.forTarget(songServiceUri)
+                    .createSongMetadata(resourceMetadataMapper.toResourceMetadataDTO(resourceMetadata, resourceMessage.getResourceId()));
+            log.info("Successfully saved resource metadata into song-service with song-id = {} and resource-id = {}", createdSong.getId(), resourceMessage.getResourceId());
+        } catch (FeignCommunicationApiException feignException) {
+            log.error("Error occurred in time communication with another service: " +
+                    "Message : {} will be placed into dead letter queue", resourceMessage, feignException.getCause());
         } catch (Exception e) {
-            log.error("Error occurred in time extracting metadata from binary resource : {}", e.getMessage());
-            throw new ResourceProcessorException("Error occurred in time extracting metadata from binary resource");
+            log.error("Error occurred: {}. The message with resource-id = {} will be placed into dead letter queue", e.getMessage(), resourceMessage.getResourceId());
         }
-    }
-
-    private ResourceMetadata mapMp3MetadataToResourceMetadata(Metadata mp3Metadata) {
-        return ResourceMetadata.builder()
-                .name(mp3Metadata.get(NAME))
-                .artist(mp3Metadata.get(ARTIST))
-                .album(mp3Metadata.get(ALBUM))
-                .length(mp3Metadata.get(LENGTH))
-                .year(Integer.valueOf(mp3Metadata.get(YEAR)))
-                .build();
     }
 }

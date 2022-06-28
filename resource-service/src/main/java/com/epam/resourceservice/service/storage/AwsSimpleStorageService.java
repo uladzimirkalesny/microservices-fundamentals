@@ -1,10 +1,12 @@
 package com.epam.resourceservice.service.storage;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.SetObjectAclRequest;
 import com.amazonaws.util.IOUtils;
 import com.epam.resourceservice.exception.ResourceServiceException;
 import com.epam.resourceservice.model.ResourceInfo;
@@ -31,9 +33,12 @@ public class AwsSimpleStorageService implements CloudProviderSimpleStorageServic
 
         var metadata = new ObjectMetadata();
         metadata.setContentLength(resource.length);
+        metadata.setContentType("audio/mpeg");
 
         amazonS3Client.putObject(new PutObjectRequest(BUCKET_NAME, key, new ByteArrayInputStream(resource), metadata));
-        return new ResourceInfo(key);
+        amazonS3Client.setObjectAcl(new SetObjectAclRequest(BUCKET_NAME, key, CannedAccessControlList.PublicRead));
+
+        return new ResourceInfo(key, amazonS3Client.getUrl(BUCKET_NAME, key));
     }
 
     @Override

@@ -23,7 +23,10 @@ public class Resource {
 
     private String resourceKey;
 
-    public Resource(String resourceKey) {
+    private String resourceLocation;
+
+    public Resource(String resourceKey, String resourceLocation) {
         this.resourceKey = resourceKey;
+        this.resourceLocation = resourceLocation;
     }
 }

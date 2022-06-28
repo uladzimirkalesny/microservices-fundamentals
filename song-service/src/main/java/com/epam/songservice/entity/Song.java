@@ -22,17 +22,17 @@ public class Song {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name")
     private String name;
-    @Column(name = "artist", nullable = false)
+    @Column(name = "artist")
     private String artist;
-    @Column(name = "album", nullable = false)
+    @Column(name = "album")
     private String album;
-    @Column(name = "song_length", nullable = false)
+    @Column(name = "song_length")
     private String length;
-    @Column(name = "resource_id", nullable = false)
+    @Column(name = "resource_id")
     private Integer resourceId;
-    @Column(name = "song_year", nullable = false)
+    @Column(name = "song_year")
     private Integer year;
 
     public Song(String name, String artist, String album, String length, Integer resourceId, Integer year) {

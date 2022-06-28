@@ -12,6 +12,21 @@ Prepare Program Arguments for AWS Configuration
 --region.name=REGION
 ```
 
+### Module-2 - Microservices Communication
+
+RabbitMQ Default Credentials:
+```commandline
+url      : http://localhost:15672/
+username : guest
+password : guest
+```
+
+Listing queues:
+```commandline
+Unix    : sudo rabbitmqctl list_queues
+Windows : rabbitmqctl.bat list_queues
+```
+
 ## resource-processor:
 
 ### Module-1 - Microservice Architecture Overview
