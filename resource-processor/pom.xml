@@ -22,6 +22,7 @@
         <tika.version>2.4.0</tika.version>
         <feign-jackson.version>11.8</feign-jackson.version>
         <resilience4j.version>1.7.1</resilience4j.version>
+        <spring-cloud-starter-contract.version>3.0.0</spring-cloud-starter-contract.version>
     </properties>
 
     <dependencies>
@@ -98,6 +99,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-contract-stub-runner</artifactId>
+            <version>3.0.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

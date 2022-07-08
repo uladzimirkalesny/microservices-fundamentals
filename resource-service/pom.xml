@@ -21,6 +21,9 @@
         <aws-java-sdk.version>1.12.237</aws-java-sdk.version>
         <validation-api.version>2.0.1.Final</validation-api.version>
         <resilience4j.version>1.7.1</resilience4j.version>
+        <spring-cloud-starter-contract-verifier.version>3.0.0</spring-cloud-starter-contract-verifier.version>
+        <h2.version>2.1.212</h2.version>
+        <testcontainers.version>1.17.2</testcontainers.version>
     </properties>
 
     <dependencies>
@@ -84,6 +87,38 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>oracle-xe</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>localstack</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
