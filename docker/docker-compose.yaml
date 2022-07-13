@@ -1,0 +1,117 @@
+version: '3.9'
+
+services:
+  resource-processor:
+    container_name: resource-processor
+    build:
+      context: ../resource-processor
+      dockerfile: Dockerfile
+    image: resource-processor:latest
+    environment:
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PWD=${RABBITMQ_PWD}
+      - RESOURCE_SERVICE=${RESOURCE_SERVICE}
+      - RESOURCE_PORT=${RESOURCE_PORT}
+      - SONG_SERVICE=${SONG_SERVICE}
+      - SONG_PORT=${SONG_PORT}
+    ports:
+      - "8083:8083"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      song-service:
+        condition: service_started
+      resource-service:
+        condition: service_started
+
+  song-service-database:
+    container_name: song-service-database
+    image: gvenzl/oracle-xe:latest
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PASSWORD=${SONG_SERVICE_ORACLE_PASSWORD}
+      - ORACLE_DATABASE=${SONG_SERVICE_ORACLE_DATABASE}
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  song-service:
+    container_name: song-service
+    build:
+      context: ../song-service
+      dockerfile: Dockerfile
+    image: song-service:latest
+    ports:
+      - "8082:8082"
+    environment:
+      - SONG_SERVICE_ORACLE=${SONG_SERVICE_ORACLE}
+      - SONG_SERVICE_ORACLE_PORT=${SONG_SERVICE_ORACLE_PORT}
+      - ORACLE_PASSWORD=${SONG_SERVICE_ORACLE_PASSWORD}
+      - ORACLE_USER=${SONG_SERVICE_ORACLE_USER}
+    depends_on:
+      song-service-database:
+        condition: service_healthy
+
+  resource-service-database:
+    container_name: resource-service-database
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=${RESOURCE_SERVICE_DATABASE_POSTGRES_DB}
+      - POSTGRES_PASSWORD=${RESOURCE_SERVICE_DATABASE_POSTGRES_PWD}
+      - POSTGRES_USER=${RESOURCE_SERVICE_DATABASE_POSTGRES_USR}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    container_name: 'rabbitmq'
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    depends_on:
+      resource-service-database:
+        condition: service_healthy
+
+  resource-service:
+    container_name: resource-service
+    build:
+      context: ../resource-service
+      dockerfile: Dockerfile
+    image: resource-service:latest
+    environment:
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PWD=${RABBITMQ_PWD}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_REGION_NAME=${AWS_REGION_NAME}
+      - RESOURCE_SERVICE_DATABASE_POSTGRES_PWD=${RESOURCE_SERVICE_DATABASE_POSTGRES_PWD}
+      - RESOURCE_SERVICE_DATABASE_POSTGRES_USR=${RESOURCE_SERVICE_DATABASE_POSTGRES_USR}
+      - RESOURCE_SERVICE_POSTGRES=${RESOURCE_SERVICE_POSTGRES}
+      - RESOURCE_SERVICE_POSTGRES_PORT=${RESOURCE_SERVICE_POSTGRES_PORT}
+    ports:
+      - "8081:8081"
+    depends_on:
+      resource-service-database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy

@@ -24,6 +24,7 @@
         <spring-cloud-starter-contract-verifier.version>3.0.0</spring-cloud-starter-contract-verifier.version>
         <h2.version>2.1.212</h2.version>
         <testcontainers.version>1.17.2</testcontainers.version>
+        <postgresql.version>42.3.3</postgresql.version>
     </properties>
 
     <dependencies>
@@ -73,9 +74,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.oracle.database.jdbc</groupId>
-            <artifactId>ojdbc8</artifactId>
-            <scope>runtime</scope>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -103,12 +104,6 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${testcontainers.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>oracle-xe</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>

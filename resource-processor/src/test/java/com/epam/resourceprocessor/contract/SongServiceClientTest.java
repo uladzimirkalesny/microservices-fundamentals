@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@AutoConfigureStubRunner(ids = {"com.epam:song-service:1.0.0:stubs:8082"},
+@AutoConfigureStubRunner(ids = {"com.epam:song-service:1.0.0:stubs:9999"},
         stubsMode = StubRunnerProperties.StubsMode.LOCAL)
 @DirtiesContext
 class SongServiceClientTest {
@@ -38,7 +38,7 @@ class SongServiceClientTest {
                 .resourceId(1)
                 .build();
 
-        var songServiceFeignClient = client.forTarget("http://localhost:8082/v1/songs");
+        var songServiceFeignClient = client.forTarget("http://localhost:9999/v1/songs");
         var songMetadata = songServiceFeignClient.createSongMetadata(resourceDto);
 
         assertAll(() -> {
