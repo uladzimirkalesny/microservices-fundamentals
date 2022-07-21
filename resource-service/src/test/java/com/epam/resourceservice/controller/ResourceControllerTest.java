@@ -1,9 +1,5 @@
 package com.epam.resourceservice.controller;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.when;
-
 import com.epam.resourceservice.facade.ResourceFacade;
 import com.epam.resourceservice.utils.RequestParamMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,12 +11,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.nio.charset.StandardCharsets;
+
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {ResourceController.class})
 @ExtendWith(SpringExtension.class)

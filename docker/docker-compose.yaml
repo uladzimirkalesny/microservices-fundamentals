@@ -12,10 +12,7 @@ services:
       - RABBITMQ_PORT=${RABBITMQ_PORT}
       - RABBITMQ_USER=${RABBITMQ_USER}
       - RABBITMQ_PWD=${RABBITMQ_PWD}
-      - RESOURCE_SERVICE=${RESOURCE_SERVICE}
-      - RESOURCE_PORT=${RESOURCE_PORT}
-      - SONG_SERVICE=${SONG_SERVICE}
-      - SONG_PORT=${SONG_PORT}
+      - EUREKA_ZONE=http://eureka-service:8761/eureka
     ports:
       - "8083:8083"
     depends_on:
@@ -24,6 +21,8 @@ services:
       song-service:
         condition: service_started
       resource-service:
+        condition: service_started
+      eureka-service:
         condition: service_started
 
   song-service-database:
@@ -34,11 +33,15 @@ services:
     environment:
       - ORACLE_PASSWORD=${SONG_SERVICE_ORACLE_PASSWORD}
       - ORACLE_DATABASE=${SONG_SERVICE_ORACLE_DATABASE}
+      - EUREKA_ZONE=http://eureka-service:8761/eureka
     healthcheck:
       test: [ "CMD", "healthcheck.sh" ]
       interval: 10s
       timeout: 10s
       retries: 10
+    depends_on:
+      eureka-service:
+        condition: service_started
 
   song-service:
     container_name: song-service
@@ -53,9 +56,14 @@ services:
       - SONG_SERVICE_ORACLE_PORT=${SONG_SERVICE_ORACLE_PORT}
       - ORACLE_PASSWORD=${SONG_SERVICE_ORACLE_PASSWORD}
       - ORACLE_USER=${SONG_SERVICE_ORACLE_USER}
+      - EUREKA_ZONE=http://eureka-service:8761/eureka
     depends_on:
       song-service-database:
         condition: service_healthy
+      eureka-service:
+        condition: service_started
+      api-gateway:
+        condition: service_started
 
   resource-service-database:
     container_name: resource-service-database
@@ -66,11 +74,15 @@ services:
       - POSTGRES_DB=${RESOURCE_SERVICE_DATABASE_POSTGRES_DB}
       - POSTGRES_PASSWORD=${RESOURCE_SERVICE_DATABASE_POSTGRES_PWD}
       - POSTGRES_USER=${RESOURCE_SERVICE_DATABASE_POSTGRES_USR}
+      - EUREKA_ZONE=http://eureka-service:8761/eureka
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    depends_on:
+      eureka-service:
+        condition: service_started
 
   rabbitmq:
     container_name: 'rabbitmq'
@@ -78,6 +90,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    environment:
+      - EUREKA_ZONE=http://eureka-service:8761/eureka
     volumes:
       - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
       - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
@@ -89,6 +103,8 @@ services:
     depends_on:
       resource-service-database:
         condition: service_healthy
+      eureka-service:
+        condition: service_started
 
   resource-service:
     container_name: resource-service
@@ -108,6 +124,7 @@ services:
       - RESOURCE_SERVICE_DATABASE_POSTGRES_USR=${RESOURCE_SERVICE_DATABASE_POSTGRES_USR}
       - RESOURCE_SERVICE_POSTGRES=${RESOURCE_SERVICE_POSTGRES}
       - RESOURCE_SERVICE_POSTGRES_PORT=${RESOURCE_SERVICE_POSTGRES_PORT}
+      - EUREKA_ZONE=http://eureka-service:8761/eureka
     ports:
       - "8081:8081"
     depends_on:
@@ -115,3 +132,30 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      eureka-service:
+        condition: service_started
+      api-gateway:
+        condition: service_started
+
+  eureka-service:
+    container_name: eureka-service
+    build:
+      context: ../eureka-server
+      dockerfile: ./Dockerfile
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_ZONE=http://eureka-service:8761/eureka
+  
+  api-gateway:
+    container_name: api-gateway
+    build:
+      context: ../api-gateway
+      dockerfile: ./Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_ZONE: http://eureka-service:8761/eureka
+    depends_on:
+      eureka-service:
+        condition: service_started

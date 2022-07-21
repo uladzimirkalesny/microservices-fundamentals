@@ -15,7 +15,9 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
-@SpringBootTest(webEnvironment = RANDOM_PORT)
+@SpringBootTest(
+        properties = {"server.port:0", "eureka.client.enabled:false"},
+        webEnvironment = RANDOM_PORT)
 @TestPropertySource(locations = "classpath:application-test.properties")
 class SongControllerTest {
     @Autowired

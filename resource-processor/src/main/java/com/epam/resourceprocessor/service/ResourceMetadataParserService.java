@@ -1,7 +1,7 @@
 package com.epam.resourceprocessor.service;
 
-import com.epam.resourceprocessor.client.resource.ResourceServiceFeignDecoratorClient;
-import com.epam.resourceprocessor.client.song.SongServiceFeignDecoratorClient;
+import com.epam.resourceprocessor.client.resource.ResourceServiceFeignClient;
+import com.epam.resourceprocessor.client.song.SongServiceFeignClient;
 import com.epam.resourceprocessor.dto.ResourceMessage;
 import com.epam.resourceprocessor.exception.FeignCommunicationApiException;
 import com.epam.resourceprocessor.mapper.MetadataMapper;
@@ -19,24 +19,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class ResourceMetadataParserService {
 
-    private final SongServiceFeignDecoratorClient songServiceFeignDecoratorClient;
-    private final ResourceServiceFeignDecoratorClient resourceServiceFeignDecoratorClient;
+    private final SongServiceFeignClient songServiceFeignClient;
+    private final ResourceServiceFeignClient resourceServiceFeignClient;
     private final ResourceMetadataParser resourceMetadataParser;
     private final MetadataMapper metadataMapper;
     private final ResourceMetadataMapper resourceMetadataMapper;
-
-    @Value("${resource.service.target.uri}")
-    private String resourceServiceUri;
-
-    @Value("${song.service.target.uri}")
-    private String songServiceUri;
 
     @RabbitListener(queues = "${rabbitmq.queue.name}")
     public void processResourceMetadataByResourceId(ResourceMessage resourceMessage) {
         try {
             log.info("RabbitMQ Listener read message from queue : {}", resourceMessage);
-            var resource = resourceServiceFeignDecoratorClient.forTarget(resourceServiceUri)
-                    .getResourceByResourceId(resourceMessage.getResourceId());
+            var resource = resourceServiceFeignClient.getResourceByResourceId(resourceMessage.getResourceId());
             log.info("Successfully received the binary resource from resource-service with id = {}", resourceMessage.getResourceId());
 
             log.info("Prepare to process metadata obtaining for resource with id = {}", resourceMessage.getResourceId());
@@ -44,8 +37,7 @@ public class ResourceMetadataParserService {
             var resourceMetadata = metadataMapper.tikaMetadataToResourceMetadata(metadata);
             log.info("Resource Metadata successfully obtained : {} for binary resource with id = {}", resourceMetadata, resourceMessage.getResourceId());
 
-            var createdSong = songServiceFeignDecoratorClient.forTarget(songServiceUri)
-                    .createSongMetadata(resourceMetadataMapper.toResourceMetadataDTO(resourceMetadata, resourceMessage.getResourceId()));
+            var createdSong = songServiceFeignClient.createSongMetadata(resourceMetadataMapper.toResourceMetadataDTO(resourceMetadata, resourceMessage.getResourceId()));
             log.info("Successfully saved resource metadata into song-service with song-id = {} and resource-id = {}", createdSong.getId(), resourceMessage.getResourceId());
         } catch (FeignCommunicationApiException feignException) {
             log.error("Error occurred in time communication with another service: " +

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -28,7 +29,8 @@ import static org.mockito.Mockito.when;
 class ResourceServiceImplTest {
 
     @Autowired
-    private ResourceServiceImpl resourceServiceImpl;
+    @Qualifier("resourceService")
+    private ResourceService resourceService;
 
     @MockBean
     private ResourceRepository resourceRepository;
@@ -43,7 +45,7 @@ class ResourceServiceImplTest {
 
         when(resourceRepository.save(any(Resource.class))).thenReturn(resource);
 
-        assertNotNull(resourceServiceImpl.saveResource(resource));
+        assertNotNull(resourceService.saveResource(resource));
         verify(resourceRepository).save(any(Resource.class));
     }
 
@@ -58,7 +60,7 @@ class ResourceServiceImplTest {
         var result = Optional.of(resource);
 
         when(resourceRepository.findById(any(Integer.class))).thenReturn(result);
-        assertSame(resource, resourceServiceImpl.findResourceById(1));
+        assertSame(resource, resourceService.findResourceById(1));
         verify(resourceRepository).findById(any(Integer.class));
     }
 
@@ -74,7 +76,7 @@ class ResourceServiceImplTest {
         doNothing().when(resourceRepository).deleteById(any(Integer.class));
         when(resourceRepository.findById(any(Integer.class))).thenReturn(result);
 
-        assertEquals("Resource Key", resourceServiceImpl.deleteResourceById(1));
+        assertEquals("Resource Key", resourceService.deleteResourceById(1));
         verify(resourceRepository).findById(any(Integer.class));
         verify(resourceRepository).deleteById(any(Integer.class));
     }
@@ -92,7 +94,7 @@ class ResourceServiceImplTest {
         doThrow(new EntityNotFoundException("An error occurred")).when(resourceRepository).deleteById(any(Integer.class));
 
         when(resourceRepository.findById(any(Integer.class))).thenReturn(result);
-        assertThrows(EntityNotFoundException.class, () -> resourceServiceImpl.deleteResourceById(1));
+        assertThrows(EntityNotFoundException.class, () -> resourceService.deleteResourceById(1));
 
         verify(resourceRepository).findById(any(Integer.class));
         verify(resourceRepository).deleteById(any(Integer.class));

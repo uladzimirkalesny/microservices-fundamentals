@@ -16,7 +16,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
-@SpringBootTest
+@SpringBootTest({"server.port:0", "eureka.client.enabled:false"})
 class SongServiceTestContainersTest {
 
     @Container

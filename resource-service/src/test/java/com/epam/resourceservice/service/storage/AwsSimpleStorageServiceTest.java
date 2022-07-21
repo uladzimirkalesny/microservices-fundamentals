@@ -13,6 +13,7 @@ import org.apache.http.client.methods.HttpDelete;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -40,7 +41,8 @@ class AwsSimpleStorageServiceTest {
     private AmazonS3 amazonS3;
 
     @Autowired
-    private AwsSimpleStorageService awsSimpleStorageService;
+    @Qualifier("awsSimpleStorageService")
+    private CloudProviderSimpleStorageService service;
 
     @Test
     void testUploadResourceToS3() throws Exception {
@@ -50,7 +52,7 @@ class AwsSimpleStorageServiceTest {
                 .thenReturn(Paths.get(System.getProperty("java.io.tmpdir"), "test.txt").toUri().toURL());
         doNothing().when(amazonS3).setObjectAcl(any(SetObjectAclRequest.class));
 
-        var resourceInfo = awsSimpleStorageService.uploadResourceToS3("A".getBytes(StandardCharsets.UTF_8));
+        var resourceInfo = service.uploadResourceToS3("A".getBytes(StandardCharsets.UTF_8));
 
         assertNotNull(resourceInfo);
 
@@ -67,7 +69,7 @@ class AwsSimpleStorageServiceTest {
         s3Object.setObjectContent(new S3ObjectInputStream(in, new HttpDelete()));
         when(amazonS3.getObject(any(GetObjectRequest.class))).thenReturn(s3Object);
 
-        byte[] actual = awsSimpleStorageService.downloadResourceFromS3("Key");
+        byte[] actual = service.downloadResourceFromS3("Key");
 
         assertAll(() -> {
             assertNotNull(actual);
@@ -84,9 +86,9 @@ class AwsSimpleStorageServiceTest {
         var in = new ByteArrayInputStream("A".getBytes(StandardCharsets.UTF_8));
 
         when(s3Object.getObjectContent()).thenReturn(new S3ObjectInputStream(in, new HttpDelete()));
-        when(amazonS3.getObject((GetObjectRequest) any())).thenReturn(s3Object);
+        when(amazonS3.getObject(any(GetObjectRequest.class))).thenReturn(s3Object);
 
-        var actual = awsSimpleStorageService.downloadRangedResourceFromS3("Key", 1L, 1L);
+        var actual = service.downloadRangedResourceFromS3("Key", 1L, 1L);
 
         assertAll(() -> {
             assertNotNull(actual);
@@ -100,7 +102,7 @@ class AwsSimpleStorageServiceTest {
     @Test
     void testDeleteResourceFromS3() throws SdkClientException {
         doNothing().when(amazonS3).deleteObject(any(DeleteObjectRequest.class));
-        awsSimpleStorageService.deleteResourceFromS3("Key");
+        service.deleteResourceFromS3("Key");
         verify(amazonS3).deleteObject(any(DeleteObjectRequest.class));
     }
 }
