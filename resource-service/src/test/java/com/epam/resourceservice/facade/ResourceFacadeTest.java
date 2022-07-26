@@ -1,31 +1,12 @@
 package com.epam.resourceservice.facade;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.epam.resourceservice.entity.Resource;
-import com.epam.resourceservice.model.ResourceInfo;
+import com.epam.resourceservice.model.Storage;
 import com.epam.resourceservice.service.ResourceService;
 import com.epam.resourceservice.service.storage.CloudProviderSimpleStorageService;
-
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.nio.file.Paths;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.jupiter.api.Disabled;
-
+import com.epam.resourceservice.service.storage.StorageService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +15,14 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.util.ArrayList;
+
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {ResourceFacade.class})
 @ExtendWith(SpringExtension.class)
@@ -55,96 +44,52 @@ class ResourceFacadeTest {
     @MockBean
     private ResourceService resourceService;
 
-    @Test
-    void testSaveResource() throws UnsupportedEncodingException, MalformedURLException, AmqpException {
-        when(cloudProviderSimpleStorageService.uploadResourceToS3((byte[]) any())).thenReturn(
-                new ResourceInfo("Key", Paths.get(System.getProperty("java.io.tmpdir"), "test.txt").toUri().toURL()));
-
-        Resource resource = new Resource();
-        resource.setId(1);
-        resource.setResourceKey("Resource Key");
-        resource.setResourceLocation("Resource Location");
-        when(resourceService.saveResource((Resource) any())).thenReturn(resource);
-        doNothing().when(rabbitTemplate).convertAndSend((String) any(), (Object) any());
-        when(fanoutExchange.getName()).thenReturn("Name");
-        assertSame(resource, resourceFacade.saveResource("AAAAAAAA".getBytes("UTF-8")));
-        verify(cloudProviderSimpleStorageService).uploadResourceToS3((byte[]) any());
-        verify(resourceService).saveResource((Resource) any());
-        verify(rabbitTemplate).convertAndSend((String) any(), (Object) any());
-        verify(fanoutExchange).getName();
-    }
-
-    @Test
-    void testFindResourceById() throws UnsupportedEncodingException {
-        when(cloudProviderSimpleStorageService.downloadResourceFromS3((String) any()))
-                .thenReturn("AAAAAAAA".getBytes("UTF-8"));
-
-        Resource resource = new Resource();
-        resource.setId(1);
-        resource.setResourceKey("Resource Key");
-        resource.setResourceLocation("Resource Location");
-        when(resourceService.findResourceById((Integer) any())).thenReturn(resource);
-        byte[] actualFindResourceByIdResult = resourceFacade.findResourceById(1);
-        assertEquals(8, actualFindResourceByIdResult.length);
-        assertEquals('A', actualFindResourceByIdResult[0]);
-        assertEquals('A', actualFindResourceByIdResult[1]);
-        assertEquals('A', actualFindResourceByIdResult[2]);
-        assertEquals('A', actualFindResourceByIdResult[3]);
-        assertEquals('A', actualFindResourceByIdResult[4]);
-        assertEquals('A', actualFindResourceByIdResult[5]);
-        assertEquals('A', actualFindResourceByIdResult[6]);
-        assertEquals('A', actualFindResourceByIdResult[7]);
-        verify(cloudProviderSimpleStorageService).downloadResourceFromS3((String) any());
-        verify(resourceService).findResourceById((Integer) any());
-    }
-
-    @Test
-    void testFindRangedResourceById() throws UnsupportedEncodingException {
-        when(cloudProviderSimpleStorageService.downloadRangedResourceFromS3((String) any(), anyLong(), anyLong()))
-                .thenReturn("AAAAAAAA".getBytes("UTF-8"));
-
-        Resource resource = new Resource();
-        resource.setId(1);
-        resource.setResourceKey("Resource Key");
-        resource.setResourceLocation("Resource Location");
-        when(resourceService.findResourceById((Integer) any())).thenReturn(resource);
-        byte[] actualFindRangedResourceByIdResult = resourceFacade.findRangedResourceById(1, 1L, 1L);
-        assertEquals(8, actualFindRangedResourceByIdResult.length);
-        assertEquals('A', actualFindRangedResourceByIdResult[0]);
-        assertEquals('A', actualFindRangedResourceByIdResult[1]);
-        assertEquals('A', actualFindRangedResourceByIdResult[2]);
-        assertEquals('A', actualFindRangedResourceByIdResult[3]);
-        assertEquals('A', actualFindRangedResourceByIdResult[4]);
-        assertEquals('A', actualFindRangedResourceByIdResult[5]);
-        assertEquals('A', actualFindRangedResourceByIdResult[6]);
-        assertEquals('A', actualFindRangedResourceByIdResult[7]);
-        verify(cloudProviderSimpleStorageService).downloadRangedResourceFromS3((String) any(), anyLong(), anyLong());
-        verify(resourceService).findResourceById((Integer) any());
-    }
+    @MockBean
+    private StorageService storageService;
 
     @Test
     void testDeleteAllResourcesByIds2() {
-        doNothing().when(cloudProviderSimpleStorageService).deleteResourceFromS3((String) any());
+        doNothing().when(cloudProviderSimpleStorageService).deleteResourceFromS3((String) any(), (String) any());
+
+        Resource resource = new Resource();
+        resource.setId(1);
+        resource.setResourceKey("Resource Key");
+        resource.setResourceLocation("Resource Location");
+        resource.setStorageId(123);
         when(resourceService.deleteResourceById((Integer) any())).thenReturn("42");
+        when(resourceService.findResourceById((Integer) any())).thenReturn(resource);
+        when(storageService.obtainStorageById((Integer) any())).thenReturn(new Storage());
 
         ArrayList<Integer> integerList = new ArrayList<>();
         integerList.add(2);
         resourceFacade.deleteAllResourcesByIds(integerList);
-        verify(cloudProviderSimpleStorageService).deleteResourceFromS3((String) any());
+        verify(cloudProviderSimpleStorageService).deleteResourceFromS3((String) any(), (String) any());
+        verify(resourceService).findResourceById((Integer) any());
         verify(resourceService).deleteResourceById((Integer) any());
+        verify(storageService).obtainStorageById((Integer) any());
     }
 
     @Test
-    void testDeleteAllResourcesByIds3() {
-        doNothing().when(cloudProviderSimpleStorageService).deleteResourceFromS3((String) any());
+    void testDeleteAllResourcesByIds4() {
+        doNothing().when(cloudProviderSimpleStorageService).deleteResourceFromS3((String) any(), (String) any());
+
+        Resource resource = new Resource();
+        resource.setId(1);
+        resource.setResourceKey("Resource Key");
+        resource.setResourceLocation("Resource Location");
+        resource.setStorageId(123);
         when(resourceService.deleteResourceById((Integer) any())).thenReturn("42");
+        when(resourceService.findResourceById((Integer) any())).thenReturn(resource);
+        when(storageService.obtainStorageById((Integer) any())).thenReturn(new Storage());
 
         ArrayList<Integer> integerList = new ArrayList<>();
         integerList.add(2);
         integerList.add(2);
         resourceFacade.deleteAllResourcesByIds(integerList);
-        verify(cloudProviderSimpleStorageService, atLeast(1)).deleteResourceFromS3((String) any());
+        verify(cloudProviderSimpleStorageService, atLeast(1)).deleteResourceFromS3((String) any(), (String) any());
+        verify(resourceService, atLeast(1)).findResourceById((Integer) any());
         verify(resourceService, atLeast(1)).deleteResourceById((Integer) any());
+        verify(storageService, atLeast(1)).obtainStorageById((Integer) any());
     }
 }
 

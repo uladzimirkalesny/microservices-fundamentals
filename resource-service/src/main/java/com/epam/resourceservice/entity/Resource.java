@@ -25,8 +25,11 @@ public class Resource {
 
     private String resourceLocation;
 
-    public Resource(String resourceKey, String resourceLocation) {
+    private Integer storageId;
+
+    public Resource(String resourceKey, String resourceLocation, Integer storageId) {
         this.resourceKey = resourceKey;
         this.resourceLocation = resourceLocation;
+        this.storageId = storageId;
     }
 }

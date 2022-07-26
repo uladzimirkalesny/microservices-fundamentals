@@ -78,6 +78,6 @@ class ResourceRepositoryTest {
     }
 
     private Resource getResource() {
-        return new Resource("key1", "location1");
+        return new Resource("key1", "location1", 1);
     }
 }

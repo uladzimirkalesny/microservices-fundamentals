@@ -8,7 +8,6 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.model.SetObjectAclRequest;
 import org.apache.http.client.methods.HttpDelete;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,15 +49,13 @@ class AwsSimpleStorageServiceTest {
         when(amazonS3.putObject(any(PutObjectRequest.class))).thenReturn(putObjectResult);
         when(amazonS3.getUrl(anyString(), anyString()))
                 .thenReturn(Paths.get(System.getProperty("java.io.tmpdir"), "test.txt").toUri().toURL());
-        doNothing().when(amazonS3).setObjectAcl(any(SetObjectAclRequest.class));
 
-        var resourceInfo = service.uploadResourceToS3("A".getBytes(StandardCharsets.UTF_8));
+        var resourceInfo = service.uploadResourceToS3("A".getBytes(StandardCharsets.UTF_8), "Bucket");
 
         assertNotNull(resourceInfo);
 
         verify(amazonS3).putObject(any(PutObjectRequest.class));
         verify(amazonS3).getUrl(anyString(), anyString());
-        verify(amazonS3).setObjectAcl(any(SetObjectAclRequest.class));
     }
 
     @Test
@@ -69,7 +66,7 @@ class AwsSimpleStorageServiceTest {
         s3Object.setObjectContent(new S3ObjectInputStream(in, new HttpDelete()));
         when(amazonS3.getObject(any(GetObjectRequest.class))).thenReturn(s3Object);
 
-        byte[] actual = service.downloadResourceFromS3("Key");
+        byte[] actual = service.downloadResourceFromS3("Key", "Bucket");
 
         assertAll(() -> {
             assertNotNull(actual);
@@ -88,7 +85,7 @@ class AwsSimpleStorageServiceTest {
         when(s3Object.getObjectContent()).thenReturn(new S3ObjectInputStream(in, new HttpDelete()));
         when(amazonS3.getObject(any(GetObjectRequest.class))).thenReturn(s3Object);
 
-        var actual = service.downloadRangedResourceFromS3("Key", 1L, 1L);
+        var actual = service.downloadRangedResourceFromS3("Key", "Bucket", 1L, 1L);
 
         assertAll(() -> {
             assertNotNull(actual);
@@ -102,7 +99,7 @@ class AwsSimpleStorageServiceTest {
     @Test
     void testDeleteResourceFromS3() throws SdkClientException {
         doNothing().when(amazonS3).deleteObject(any(DeleteObjectRequest.class));
-        service.deleteResourceFromS3("Key");
+        service.deleteResourceFromS3("Key", "Bucket");
         verify(amazonS3).deleteObject(any(DeleteObjectRequest.class));
     }
 }

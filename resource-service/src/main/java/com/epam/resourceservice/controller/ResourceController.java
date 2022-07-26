@@ -3,6 +3,7 @@ package com.epam.resourceservice.controller;
 import com.epam.resourceservice.dto.CreateResourceResponse;
 import com.epam.resourceservice.dto.DeleteResourceResponse;
 import com.epam.resourceservice.facade.ResourceFacade;
+import com.epam.resourceservice.model.Storage;
 import com.epam.resourceservice.utils.RequestParamMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -75,6 +77,15 @@ public class ResourceController {
 
         log.info("The binary resource with ids {} has been deleted from cloud storage and database", ids);
         return ResponseEntity.ok(new DeleteResourceResponse(ids));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CreateResourceResponse> updateResourceStorageTypeByResourceIdAndStorageId(
+            @PathVariable(value = "id") Integer resourceId,
+            @RequestBody Storage storage) {
+        log.info("Start to transfer resource with resource-id = {} to permanent storage with storage = {}", resourceId, storage);
+        var updatedResource = resourceFacade.updateResourceStorageType(resourceId, storage);
+        return ResponseEntity.ok(new CreateResourceResponse(updatedResource.getId()));
     }
 
 }
