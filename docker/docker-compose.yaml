@@ -199,3 +199,70 @@ services:
         condition: service_started
       api-gateway:
         condition: service_started
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.3.2
+    container_name: elasticsearch
+    restart: always
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - elasticsearch-data-volume:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.3.2
+    container_name: kibana
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.3.2
+    container_name: logstash
+    # Load Logstash configuration from specifying file/directory
+    command: logstash -f /etc/logstash/conf.d/logstash.conf
+    # Mount directory with configuration file into running Logstash container
+    volumes:
+      - ./logstash:/etc/logstash/conf.d
+    ports:
+      - "5000:5000"
+    depends_on:
+      - elasticsearch
+      - kibana
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+    - "9090:9090"
+
+  grafana:
+    image: "grafana/grafana:latest"
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    ports:
+      - "3000:3000"
+
+volumes:
+  elasticsearch-data-volume:
+    driver: local

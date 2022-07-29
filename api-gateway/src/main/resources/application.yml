@@ -23,6 +23,10 @@ spring:
           uri: lb://storage-service
           predicates:
             - Path=/v1/storages/**
+        - id: grafana
+          uri: lb://grafana
+          predicates:
+            - Path=/
 
 eureka:
   instance:
