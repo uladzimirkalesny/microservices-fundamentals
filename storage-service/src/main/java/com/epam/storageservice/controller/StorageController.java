@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.validation.constraints.Size;
 import java.util.List;
@@ -34,6 +35,7 @@ public class StorageController {
     private final StorageService storageService;
     private final RequestParamMapper requestParamMapper;
 
+    @RolesAllowed("ADMIN")
     @PostMapping
     public ResponseEntity<CreatedStorageResponse> createStorage(@Valid @RequestBody CreateStorageRequest createStorageRequest) {
         log.info("Start to create storage = {}", createStorageRequest.toString());
@@ -42,6 +44,7 @@ public class StorageController {
         return ResponseEntity.ok(new CreatedStorageResponse(storage.getId()));
     }
 
+    @RolesAllowed({"ADMIN", "USER"})
     @GetMapping
     public ResponseEntity<List<Storage>> getAllStorages() {
         log.info("Get all storages");
@@ -50,6 +53,7 @@ public class StorageController {
         return ResponseEntity.ok(storages);
     }
 
+    @RolesAllowed("ADMIN")
     @DeleteMapping
     public ResponseEntity<DeleteStorageResponse> deleteStorage(@RequestParam(value = "id")
                                                                @Size(max = 200) String id) {
